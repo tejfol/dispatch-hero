@@ -6,3 +6,4 @@
 export * from './types'
 export * from './grid'
 export * from './store'
+export * from './assign'

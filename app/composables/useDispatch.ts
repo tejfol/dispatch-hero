@@ -9,11 +9,14 @@ export function useDispatch() {
   const couriers = useFetch<Courier[]>('/api/couriers', { default: () => [] })
 
   async function createOrder(pickup: { x: number; y: number }, dropoff: { x: number; y: number }) {
-    const res = await $fetch<Order>('/api/orders', {
+    const res = await $fetch<{
+      order: Order
+      assignment: { assigned: true; courierId: string; courier: Courier; distance: number } | { assigned: false; message: string }
+    }>('/api/orders', {
       method: 'POST',
       body: { pickup, dropoff }
     })
-    await orders.refresh()
+    await Promise.all([orders.refresh(), couriers.refresh()])
     return res
   }
 

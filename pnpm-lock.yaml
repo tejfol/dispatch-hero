@@ -35,6 +35,16 @@ importers:
       vue-router:
         specifier: ^4.6.4
         version: 4.6.4(vue@3.5.28(typescript@5.9.3))
+    devDependencies:
+      '@iconify-json/lucide':
+        specifier: ^1.2.91
+        version: 1.2.91
+      '@typescript-eslint/parser':
+        specifier: ^8.56.0
+        version: 8.56.0(eslint@9.39.2(jiti@2.6.1))(typescript@5.9.3)
+      vue-eslint-parser:
+        specifier: ^10.4.0
+        version: 10.4.0(eslint@9.39.2(jiti@2.6.1))
 
 packages:
 
@@ -623,6 +633,9 @@ packages:
   '@humanwhocodes/retry@0.4.3':
     resolution: {integrity: sha512-bV0Tgo9K4hfPCek+aMAn81RppFKv2ySDQeMoSZuvTASywNTnVJCArCZE2FWqpvIatKu7VMRLWlR1EazvVhDyhQ==}
     engines: {node: '>=18.18'}
+
+  '@iconify-json/lucide@1.2.91':
+    resolution: {integrity: sha512-8fuRiK+HiNRgCKMspn9UPsDpBw0TqVTIY0LOiDbMnFxOBwAulMXIl+SVOtp4LzxNvCXB5ofYffiiFIFDitqo7w==}
 
   '@iconify/collections@1.0.651':
     resolution: {integrity: sha512-ALGlYxNVOIylxNHjFaylqPTzgNaMHeoFA8ao/piPHjYGD526xEp847F7KePy9jvOLChy2bzQVwAV9Em3HiicjQ==}
@@ -5955,6 +5968,10 @@ snapshots:
   '@humanwhocodes/module-importer@1.0.1': {}
 
   '@humanwhocodes/retry@0.4.3': {}
+
+  '@iconify-json/lucide@1.2.91':
+    dependencies:
+      '@iconify/types': 2.0.0
 
   '@iconify/collections@1.0.651':
     dependencies:

@@ -112,18 +112,7 @@
             <!-- New order -->
             <UCard>
               <template #header>
-                <div class="flex items-center justify-between gap-2">
-                  <span class="font-semibold text-default">New order</span>
-                  <UButton
-                    type="button"
-                    color="neutral"
-                    variant="ghost"
-                    size="xs"
-                    icon="i-lucide-shuffle"
-                    label="Randomize"
-                    @click="randomizeOrderCoords"
-                  />
-                </div>
+                <span class="font-semibold text-default">New order</span>
               </template>
 
               <form class="space-y-4" @submit.prevent="submitOrder">
@@ -158,7 +147,7 @@
                       variant="outline"
                     />
                   </UFormField>
-                  <UFormField label="Dropoff Y" :error="orderError">
+                  <UFormField label="Dropoff Y">
                     <UInput
                       v-model.number="newOrder.dropoffY"
                       type="number"
@@ -169,6 +158,14 @@
                     />
                   </UFormField>
                 </div>
+                <UAlert
+                  v-if="orderError"
+                  color="warning"
+                  variant="soft"
+                  size="sm"
+                  :title="orderError"
+                  class="mb-0"
+                />
                 <UButton
                   type="submit"
                   block
@@ -184,18 +181,7 @@
             <!-- Add courier -->
             <UCard>
               <template #header>
-                <div class="flex items-center justify-between gap-2">
-                  <span class="font-semibold text-default">Add courier</span>
-                  <UButton
-                    type="button"
-                    color="neutral"
-                    variant="ghost"
-                    size="xs"
-                    icon="i-lucide-shuffle"
-                    label="Randomize"
-                    @click="randomizeCourierCoords"
-                  />
-                </div>
+                <span class="font-semibold text-default">Add courier</span>
               </template>
 
               <form class="space-y-4" @submit.prevent="submitCourier">
@@ -210,7 +196,7 @@
                       variant="outline"
                     />
                   </UFormField>
-                  <UFormField label="Y" :error="courierError">
+                  <UFormField label="Y">
                     <UInput
                       v-model.number="newCourier.y"
                       type="number"
@@ -221,6 +207,14 @@
                     />
                   </UFormField>
                 </div>
+                <UAlert
+                  v-if="courierError"
+                  color="warning"
+                  variant="soft"
+                  size="sm"
+                  :title="courierError"
+                  class="mb-0"
+                />
                 <UButton
                   type="submit"
                   block
@@ -322,19 +316,14 @@
 </template>
 
 <script setup lang="ts">
-const {
-  orders,
-  couriers,
-  createOrder,
-  createCourier,
-  refresh: refreshData,
-  clearAll,
-} = useDispatch();
+const dispatch = useDispatch()
+const { orders, couriers, createOrder, createCourier, clearAll } = dispatch
+const refreshData = dispatch.refresh
 
-const refreshStatus = ref("idle");
-const clearStatus = ref("idle");
-const orderSubmitStatus = ref("idle");
-const courierSubmitStatus = ref("idle");
+const refreshStatus = ref<"idle" | "pending">("idle")
+const clearStatus = ref<"idle" | "pending">("idle")
+const orderSubmitStatus = ref<"idle" | "pending">("idle")
+const courierSubmitStatus = ref<"idle" | "pending">("idle")
 const orderError = ref("");
 const courierError = ref("");
 
@@ -351,38 +340,38 @@ const newCourier = reactive({
 });
 
 const orderList = computed(() => {
-  const data = orders.data?.value ?? [];
-  return Array.isArray(data) ? data.filter(Boolean) : [];
-});
+  const data = orders.data?.value ?? []
+  return Array.isArray(data) ? data.filter(Boolean) : []
+})
 
 const courierList = computed(() => {
-  const data = couriers.data?.value ?? [];
-  return Array.isArray(data) ? data.filter(Boolean) : [];
-});
+  const data = couriers.data?.value ?? []
+  return Array.isArray(data) ? data.filter(Boolean) : []
+})
 
-function randomInt(max) {
+function randomInt(max: number): number {
   return Math.floor(Math.random() * (max + 1));
 }
 
-function randomizeOrderCoords() {
+function randomizeOrderCoords(): void {
   newOrder.pickupX = randomInt(100);
   newOrder.pickupY = randomInt(100);
   newOrder.dropoffX = randomInt(100);
   newOrder.dropoffY = randomInt(100);
 }
 
-function randomizeCourierCoords() {
+function randomizeCourierCoords(): void {
   newCourier.x = randomInt(100);
   newCourier.y = randomInt(100);
 }
 
-function pct(n) {
+function pct(n: number | undefined): string {
   const num = Number(n);
   if (Number.isNaN(num)) return "0%";
   return `${Math.max(0, Math.min(100, num))}%`;
 }
 
-function pointStyle(p) {
+function pointStyle(p: { x: number; y: number } | undefined): { left: string; top: string } {
   if (!p || typeof p.x !== "number" || typeof p.y !== "number") {
     return { left: "0%", top: "0%" };
   }
@@ -392,8 +381,8 @@ function pointStyle(p) {
   };
 }
 
-function courierDotClass(c) {
-  if (!c) return "bg-muted";
+function courierDotClass(c: { status?: string } | undefined): string {
+  if (!c) return "bg-muted"
   switch (c.status) {
     case "idle":
       return "bg-info";
@@ -404,28 +393,30 @@ function courierDotClass(c) {
   }
 }
 
-function orderStatusColor(status) {
-  if (status == null) return "neutral";
-  const map = {
+type BadgeColor = "primary" | "secondary" | "success" | "warning" | "info" | "error" | "neutral"
+
+function orderStatusColor(status: string | undefined): BadgeColor {
+  if (status == null) return "neutral"
+  const map: Record<string, BadgeColor> = {
     pending: "warning",
     assigned: "info",
     picked_up: "primary",
     in_transit: "primary",
     delivered: "success",
     cancelled: "neutral",
-  };
-  return map[status] ?? "neutral";
+  }
+  return map[status] ?? "neutral"
 }
 
-function courierStatusColor(status) {
-  if (status == null) return "neutral";
+function courierStatusColor(status: string | undefined): BadgeColor {
+  if (status == null) return "neutral"
   switch (status) {
     case "idle":
-      return "info";
+      return "info"
     case "busy":
-      return "primary";
+      return "primary"
     default:
-      return "neutral";
+      return "neutral"
   }
 }
 
@@ -449,15 +440,20 @@ async function onClearAll() {
 
 async function submitOrder() {
   orderError.value = "";
+  randomizeOrderCoords();
   orderSubmitStatus.value = "pending";
   try {
-    await createOrder(
+    const res = await createOrder(
       { x: newOrder.pickupX, y: newOrder.pickupY },
       { x: newOrder.dropoffX, y: newOrder.dropoffY },
     );
-  } catch (e: any) {
+    if (res?.assignment && !res.assignment.assigned) {
+      orderError.value = res.assignment.message ?? "No couriers available";
+    }
+  } catch (e: unknown) {
+    const err = e as { data?: { message?: string }; message?: string };
     orderError.value =
-      e?.data?.message ?? e?.message ?? "Failed to create order";
+      err?.data?.message ?? err?.message ?? "Failed to create order";
   } finally {
     orderSubmitStatus.value = "idle";
   }
@@ -465,12 +461,14 @@ async function submitOrder() {
 
 async function submitCourier() {
   courierError.value = "";
+  randomizeCourierCoords();
   courierSubmitStatus.value = "pending";
   try {
     await createCourier({ x: newCourier.x, y: newCourier.y });
-  } catch (e: any) {
+  } catch (e: unknown) {
+    const err = e as { data?: { message?: string }; message?: string };
     courierError.value =
-      e?.data?.message ?? e?.message ?? "Failed to add courier";
+      err?.data?.message ?? err?.message ?? "Failed to add courier";
   } finally {
     courierSubmitStatus.value = "idle";
   }

@@ -1,4 +1,10 @@
-import { orderStore, isPointInGrid, DEFAULT_GRID, type Order } from '~/lib/dispatch/index'
+import {
+  orderStore,
+  isPointInGrid,
+  DEFAULT_GRID,
+  assignNearestCourier,
+  type Order
+} from '~/lib/dispatch/index'
 
 const createId = () => `order-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`
 
@@ -20,5 +26,18 @@ export default defineEventHandler(async (event) => {
     createdAt: Date.now()
   }
   orderStore.set(order)
-  return order
+
+  const assignment = assignNearestCourier(order)
+
+  return {
+    order: assignment.assigned ? assignment.order : order,
+    assignment: assignment.assigned
+      ? {
+          assigned: true,
+          courierId: assignment.courier.id,
+          courier: assignment.courier,
+          distance: assignment.distance
+        }
+      : { assigned: false, message: assignment.message }
+  }
 })

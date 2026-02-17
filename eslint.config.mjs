@@ -1,6 +1,19 @@
 // @ts-check
 import withNuxt from './.nuxt/eslint.config.mjs'
+import vueParser from 'vue-eslint-parser'
+import tsParser from '@typescript-eslint/parser'
 
 export default withNuxt(
-  // Your custom configs here
+  {
+    files: ['**/*.vue'],
+    languageOptions: {
+      parser: vueParser,
+      parserOptions: {
+        parser: tsParser,
+        extraFileExtensions: ['.vue'],
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+    },
+  },
 )
