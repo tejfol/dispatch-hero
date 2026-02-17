@@ -157,6 +157,16 @@
                       variant="outline"
                     />
                   </UFormField>
+                  <UFormField label="Weight (kg)" class="col-span-2">
+                    <UInput
+                      v-model.number="newOrder.weightKg"
+                      type="number"
+                      min="0"
+                      max="50"
+                      size="sm"
+                      variant="outline"
+                    />
+                  </UFormField>
                 </div>
                 <UAlert
                   v-if="orderError"
@@ -206,6 +216,15 @@
                       variant="outline"
                     />
                   </UFormField>
+                  <UFormField label="Transport" class="col-span-2">
+                    <USelect
+                      v-model="newCourier.transport"
+                      :items="transportOptions"
+                      value-key="value"
+                      size="sm"
+                      variant="outline"
+                    />
+                  </UFormField>
                 </div>
                 <UAlert
                   v-if="courierError"
@@ -249,6 +268,9 @@
                     >
                       {{ order?.id?.slice(-8) ?? "—" }}
                     </span>
+                    <span class="shrink-0 text-xs text-muted">
+                      {{ order?.weightKg != null ? `${order.weightKg} kg` : "—" }}
+                    </span>
                     <UBadge
                       :color="orderStatusColor(order?.status)"
                       variant="soft"
@@ -256,6 +278,16 @@
                     >
                       {{ order?.status ?? "—" }}
                     </UBadge>
+                    <UButton
+                      icon="i-lucide-trash-2"
+                      color="error"
+                      variant="ghost"
+                      size="xs"
+                      :loading="deletingOrderId === order?.id"
+                      :disabled="deletingOrderId != null"
+                      aria-label="Remove order"
+                      @click="order?.id && removeOrder(order.id)"
+                    />
                   </li>
                 </ul>
               </UScrollArea>
@@ -288,9 +320,9 @@
                     >
                       {{ c?.id?.slice(-8) ?? "—" }}
                     </span>
-                    <span class="shrink-0 text-xs text-muted"
-                      >({{ c?.position?.x ?? "—" }}, {{ c?.position?.y ?? "—" }})</span
-                    >
+                    <span class="shrink-0 text-xs text-muted">
+                      {{ transportLabel(c?.transport) }} ({{ c?.position?.x ?? "—" }}, {{ c?.position?.y ?? "—" }})
+                    </span>
                     <UBadge
                       :color="courierStatusColor(c?.status)"
                       variant="soft"
@@ -298,6 +330,16 @@
                     >
                       {{ c?.status ?? "—" }}
                     </UBadge>
+                    <UButton
+                      icon="i-lucide-trash-2"
+                      color="error"
+                      variant="ghost"
+                      size="xs"
+                      :loading="deletingCourierId === c?.id"
+                      :disabled="deletingCourierId != null"
+                      aria-label="Remove courier"
+                      @click="c?.id && removeCourier(c.id)"
+                    />
                   </li>
                 </ul>
               </UScrollArea>
@@ -317,13 +359,15 @@
 
 <script setup lang="ts">
 const dispatch = useDispatch()
-const { orders, couriers, createOrder, createCourier, clearAll } = dispatch
+const { orders, couriers, createOrder, createCourier, deleteOrder, deleteCourier, clearAll } = dispatch
 const refreshData = dispatch.refresh
 
 const refreshStatus = ref<"idle" | "pending">("idle")
 const clearStatus = ref<"idle" | "pending">("idle")
 const orderSubmitStatus = ref<"idle" | "pending">("idle")
 const courierSubmitStatus = ref<"idle" | "pending">("idle")
+const deletingOrderId = ref<string | null>(null)
+const deletingCourierId = ref<string | null>(null)
 const orderError = ref("");
 const courierError = ref("");
 
@@ -332,11 +376,19 @@ const newOrder = reactive({
   pickupY: 30,
   dropoffX: 80,
   dropoffY: 70,
+  weightKg: 5,
 });
+
+const transportOptions = [
+  { value: "walker", label: "Walker (≤5 kg)" },
+  { value: "bicycle", label: "Bicycle (≤15 kg)" },
+  { value: "car", label: "Car/Scooter (≤50 kg)" },
+];
 
 const newCourier = reactive({
   x: 50,
   y: 50,
+  transport: "walker" as "walker" | "bicycle" | "car",
 });
 
 const orderList = computed(() => {
@@ -358,11 +410,14 @@ function randomizeOrderCoords(): void {
   newOrder.pickupY = randomInt(100);
   newOrder.dropoffX = randomInt(100);
   newOrder.dropoffY = randomInt(100);
+  newOrder.weightKg = Math.min(50, Math.max(0, randomInt(50)));
 }
 
 function randomizeCourierCoords(): void {
   newCourier.x = randomInt(100);
   newCourier.y = randomInt(100);
+  const transports: ("walker" | "bicycle" | "car")[] = ["walker", "bicycle", "car"];
+  newCourier.transport = transports[randomInt(2)] ?? "walker";
 }
 
 function pct(n: number | undefined): string {
@@ -394,6 +449,16 @@ function courierDotClass(c: { status?: string } | undefined): string {
 }
 
 type BadgeColor = "primary" | "secondary" | "success" | "warning" | "info" | "error" | "neutral"
+
+function transportLabel(transport: string | undefined): string {
+  if (transport == null) return "—"
+  const map: Record<string, string> = {
+    walker: "Walker",
+    bicycle: "Bicycle",
+    car: "Car",
+  }
+  return map[transport] ?? transport
+}
 
 function orderStatusColor(status: string | undefined): BadgeColor {
   if (status == null) return "neutral"
@@ -446,6 +511,7 @@ async function submitOrder() {
     const res = await createOrder(
       { x: newOrder.pickupX, y: newOrder.pickupY },
       { x: newOrder.dropoffX, y: newOrder.dropoffY },
+      Math.max(0, Number(newOrder.weightKg) || 0),
     );
     if (res?.assignment && !res.assignment.assigned) {
       orderError.value = res.assignment.message ?? "No couriers available";
@@ -464,13 +530,38 @@ async function submitCourier() {
   randomizeCourierCoords();
   courierSubmitStatus.value = "pending";
   try {
-    await createCourier({ x: newCourier.x, y: newCourier.y });
+    await createCourier(
+      { x: newCourier.x, y: newCourier.y },
+      newCourier.transport,
+    );
   } catch (e: unknown) {
     const err = e as { data?: { message?: string }; message?: string };
     courierError.value =
       err?.data?.message ?? err?.message ?? "Failed to add courier";
   } finally {
     courierSubmitStatus.value = "idle";
+  }
+}
+
+async function removeOrder(id: string) {
+  deletingOrderId.value = id;
+  try {
+    await deleteOrder(id);
+  } catch {
+    // Optionally show toast; list will refresh on success
+  } finally {
+    deletingOrderId.value = null;
+  }
+}
+
+async function removeCourier(id: string) {
+  deletingCourierId.value = id;
+  try {
+    await deleteCourier(id);
+  } catch {
+    // Optionally show toast
+  } finally {
+    deletingCourierId.value = null;
   }
 }
 </script>

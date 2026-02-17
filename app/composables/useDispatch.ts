@@ -8,25 +8,42 @@ export function useDispatch() {
   const orders = useFetch<Order[]>('/api/orders', { default: () => [] })
   const couriers = useFetch<Courier[]>('/api/couriers', { default: () => [] })
 
-  async function createOrder(pickup: { x: number; y: number }, dropoff: { x: number; y: number }) {
+  async function createOrder(
+    pickup: { x: number; y: number },
+    dropoff: { x: number; y: number },
+    weightKg: number
+  ) {
     const res = await $fetch<{
       order: Order
       assignment: { assigned: true; courierId: string; courier: Courier; distance: number } | { assigned: false; message: string }
     }>('/api/orders', {
       method: 'POST',
-      body: { pickup, dropoff }
+      body: { pickup, dropoff, weightKg }
     })
     await Promise.all([orders.refresh(), couriers.refresh()])
     return res
   }
 
-  async function createCourier(position?: { x: number; y: number }) {
+  async function createCourier(
+    position?: { x: number; y: number },
+    transport?: 'walker' | 'bicycle' | 'car'
+  ) {
     const res = await $fetch<Courier>('/api/couriers', {
       method: 'POST',
-      body: { position: position ?? { x: 0, y: 0 } }
+      body: { position: position ?? { x: 0, y: 0 }, transport }
     })
     await couriers.refresh()
     return res
+  }
+
+  async function deleteOrder(id: string) {
+    await $fetch(`/api/orders/${id}`, { method: 'DELETE' })
+    await Promise.all([orders.refresh(), couriers.refresh()])
+  }
+
+  async function deleteCourier(id: string) {
+    await $fetch(`/api/couriers/${id}`, { method: 'DELETE' })
+    await couriers.refresh()
   }
 
   async function clearAll() {
@@ -40,6 +57,8 @@ export function useDispatch() {
     couriers,
     createOrder,
     createCourier,
+    deleteOrder,
+    deleteCourier,
     refresh: async () => {
       await Promise.all([grid.refresh(), orders.refresh(), couriers.refresh()])
     },
