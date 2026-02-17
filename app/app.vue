@@ -125,9 +125,20 @@
               </div>
 
               <template #footer>
-                <p class="text-xs text-muted">
-                  Andrew = pickup · Yana = dropoff · Oleksandr = courier
-                </p>
+                <div class="flex items-center justify-center gap-4 text-xs text-muted">
+                  <span class="flex items-center gap-1.5">
+                    <NuxtImg src="/image/andrew.jpeg" alt="" class="h-5 w-5 rounded-full object-cover ring-1 ring-default" width="20" height="20" />
+                    <span>Pickup</span>
+                  </span>
+                  <span class="flex items-center gap-1.5">
+                    <NuxtImg src="/image/yana.jpg" alt="" class="h-5 w-5 rounded-full object-cover ring-1 ring-default" width="20" height="20" />
+                    <span>Dropoff</span>
+                  </span>
+                  <span class="flex items-center gap-1.5">
+                    <NuxtImg src="/image/oleksandr.png" alt="" class="h-5 w-5 rounded-full object-cover ring-1 ring-default" width="20" height="20" />
+                    <span>Courier</span>
+                  </span>
+                </div>
               </template>
             </UCard>
           </section>
