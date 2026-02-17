@@ -278,16 +278,40 @@
                     >
                       {{ order?.status ?? "—" }}
                     </UBadge>
-                    <UButton
-                      icon="i-lucide-trash-2"
-                      color="error"
-                      variant="ghost"
-                      size="xs"
-                      :loading="deletingOrderId === order?.id"
-                      :disabled="deletingOrderId != null"
-                      aria-label="Remove order"
-                      @click="order?.id && removeOrder(order.id)"
-                    />
+                    <span class="flex items-center gap-0.5 shrink-0">
+                      <UButton
+                        v-if="canDeliverOrder(order)"
+                        icon="i-lucide-check-circle"
+                        color="success"
+                        variant="ghost"
+                        size="xs"
+                        :loading="deliveringOrderId === order?.id"
+                        :disabled="deliveringOrderId != null"
+                        aria-label="Mark delivered"
+                        @click="order?.id && onDeliverOrder(order.id)"
+                      />
+                      <UButton
+                        v-if="canCancelOrder(order)"
+                        icon="i-lucide-x-circle"
+                        color="warning"
+                        variant="ghost"
+                        size="xs"
+                        :loading="cancellingOrderId === order?.id"
+                        :disabled="cancellingOrderId != null"
+                        aria-label="Cancel order"
+                        @click="order?.id && onCancelOrder(order.id)"
+                      />
+                      <UButton
+                        icon="i-lucide-trash-2"
+                        color="error"
+                        variant="ghost"
+                        size="xs"
+                        :loading="deletingOrderId === order?.id"
+                        :disabled="deletingOrderId != null"
+                        aria-label="Remove order"
+                        @click="order?.id && removeOrder(order.id)"
+                      />
+                    </span>
                   </li>
                 </ul>
               </UScrollArea>
@@ -321,7 +345,7 @@
                       {{ c?.id?.slice(-8) ?? "—" }}
                     </span>
                     <span class="shrink-0 text-xs text-muted">
-                      {{ transportLabel(c?.transport) }} ({{ c?.position?.x ?? "—" }}, {{ c?.position?.y ?? "—" }})
+                      {{ transportLabel(c?.transport) }} · {{ c?.completedOrdersToday ?? 0 }} today ({{ c?.position?.x ?? "—" }}, {{ c?.position?.y ?? "—" }})
                     </span>
                     <UBadge
                       :color="courierStatusColor(c?.status)"
@@ -359,7 +383,7 @@
 
 <script setup lang="ts">
 const dispatch = useDispatch()
-const { orders, couriers, createOrder, createCourier, deleteOrder, deleteCourier, clearAll } = dispatch
+const { orders, couriers, createOrder, createCourier, deleteOrder, deleteCourier, deliverOrder, cancelOrder, clearAll } = dispatch
 const refreshData = dispatch.refresh
 
 const refreshStatus = ref<"idle" | "pending">("idle")
@@ -368,6 +392,8 @@ const orderSubmitStatus = ref<"idle" | "pending">("idle")
 const courierSubmitStatus = ref<"idle" | "pending">("idle")
 const deletingOrderId = ref<string | null>(null)
 const deletingCourierId = ref<string | null>(null)
+const deliveringOrderId = ref<string | null>(null)
+const cancellingOrderId = ref<string | null>(null)
 const orderError = ref("");
 const courierError = ref("");
 
@@ -464,6 +490,7 @@ function orderStatusColor(status: string | undefined): BadgeColor {
   if (status == null) return "neutral"
   const map: Record<string, BadgeColor> = {
     pending: "warning",
+    queued: "neutral",
     assigned: "info",
     picked_up: "primary",
     in_transit: "primary",
@@ -471,6 +498,16 @@ function orderStatusColor(status: string | undefined): BadgeColor {
     cancelled: "neutral",
   }
   return map[status] ?? "neutral"
+}
+
+function canDeliverOrder(order: { status?: string } | undefined): boolean {
+  if (!order) return false
+  return ["assigned", "picked_up", "in_transit"].includes(order.status ?? "")
+}
+
+function canCancelOrder(order: { status?: string } | undefined): boolean {
+  if (!order) return false
+  return ["pending", "queued", "assigned"].includes(order.status ?? "")
 }
 
 function courierStatusColor(status: string | undefined): BadgeColor {
@@ -514,7 +551,7 @@ async function submitOrder() {
       Math.max(0, Number(newOrder.weightKg) || 0),
     );
     if (res?.assignment && !res.assignment.assigned) {
-      orderError.value = res.assignment.message ?? "No couriers available";
+      orderError.value = res.assignment.queued ? "Queued (no free courier)" : (res.assignment.message ?? "No couriers available");
     }
   } catch (e: unknown) {
     const err = e as { data?: { message?: string }; message?: string };
@@ -562,6 +599,24 @@ async function removeCourier(id: string) {
     // Optionally show toast
   } finally {
     deletingCourierId.value = null;
+  }
+}
+
+async function onDeliverOrder(id: string) {
+  deliveringOrderId.value = id;
+  try {
+    await deliverOrder(id);
+  } finally {
+    deliveringOrderId.value = null;
+  }
+}
+
+async function onCancelOrder(id: string) {
+  cancellingOrderId.value = id;
+  try {
+    await cancelOrder(id);
+  } finally {
+    cancellingOrderId.value = null;
   }
 }
 </script>

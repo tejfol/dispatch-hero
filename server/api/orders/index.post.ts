@@ -36,7 +36,7 @@ export default defineEventHandler(async (event) => {
   const assignment = assignNearestCourier(order)
 
   return {
-    order: assignment.assigned ? assignment.order : order,
+    order: assignment.assigned ? assignment.order : assignment.queued ? assignment.order : order,
     assignment: assignment.assigned
       ? {
           assigned: true,
@@ -44,6 +44,10 @@ export default defineEventHandler(async (event) => {
           courier: assignment.courier,
           distance: assignment.distance
         }
-      : { assigned: false, message: assignment.message }
+      : {
+          assigned: false,
+          queued: !!assignment.queued,
+          message: assignment.message
+        }
   }
 })

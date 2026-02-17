@@ -1,7 +1,6 @@
-import { orderStore, courierStore } from '~/lib/dispatch/index'
+import { clearAllStores } from '~/lib/dispatch/index'
 
 export default defineEventHandler(() => {
-  orderStore.clear()
-  courierStore.clear()
+  clearAllStores()
   return { ok: true }
 })

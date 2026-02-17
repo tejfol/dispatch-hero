@@ -20,7 +20,8 @@ export interface CityGrid {
 /** Order status in the dispatch flow. */
 export type OrderStatus =
   | 'pending'   // created, not yet assigned
-  | 'assigned'  // assigned to a courier
+  | 'queued'   // waiting for a free courier
+  | 'assigned' // assigned to a courier
   | 'picked_up'
   | 'in_transit'
   | 'delivered'
@@ -61,6 +62,8 @@ export interface Courier {
   status: CourierStatus
   /** Order id when status is busy. */
   currentOrderId?: string
+  /** Number of orders completed today (for assignment tie-break). Default 0. */
+  completedOrdersToday?: number
 }
 
 /** Default city grid: 0–100 on X and Y. */

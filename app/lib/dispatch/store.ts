@@ -6,6 +6,8 @@ import type { Courier, Order } from './types'
 
 const orders = new Map<string, Order>()
 const couriers = new Map<string, Courier>()
+/** Queue of order IDs (FIFO) when no courier is available. */
+const orderQueue: string[] = []
 
 /** Orders: mutable in-memory map. */
 export const orderStore = {
@@ -30,6 +32,30 @@ export const orderStore = {
   }
 }
 
+/** Queue of order IDs for orders waiting for a courier. */
+export const queueStore = {
+  enqueue(orderId: string): void {
+    orderQueue.push(orderId)
+  },
+
+  dequeue(): string | undefined {
+    return orderQueue.shift()
+  },
+
+  remove(orderId: string): void {
+    const i = orderQueue.indexOf(orderId)
+    if (i !== -1) orderQueue.splice(i, 1)
+  },
+
+  getAll(): string[] {
+    return [...orderQueue]
+  },
+
+  clear(): void {
+    orderQueue.length = 0
+  }
+}
+
 /** Couriers: mutable in-memory map. */
 export const courierStore = {
   getAll(): Courier[] {
@@ -51,4 +77,11 @@ export const courierStore = {
   clear(): void {
     couriers.clear()
   }
+}
+
+/** Clear all stores (orders, queue, couriers). */
+export function clearAllStores(): void {
+  orderStore.clear()
+  queueStore.clear()
+  courierStore.clear()
 }

@@ -27,7 +27,8 @@ export default defineEventHandler(async (event) => {
     id: createId(),
     position,
     transport,
-    status: 'idle'
+    status: 'idle',
+    completedOrdersToday: 0
   }
   courierStore.set(courier)
   return courier

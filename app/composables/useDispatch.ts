@@ -15,13 +15,25 @@ export function useDispatch() {
   ) {
     const res = await $fetch<{
       order: Order
-      assignment: { assigned: true; courierId: string; courier: Courier; distance: number } | { assigned: false; message: string }
+      assignment:
+        | { assigned: true; courierId: string; courier: Courier; distance: number }
+        | { assigned: false; queued?: boolean; message: string }
     }>('/api/orders', {
       method: 'POST',
       body: { pickup, dropoff, weightKg }
     })
     await Promise.all([orders.refresh(), couriers.refresh()])
     return res
+  }
+
+  async function deliverOrder(id: string) {
+    await $fetch<{ order: Order; courier: Courier }>(`/api/orders/${id}/deliver`, { method: 'POST' })
+    await Promise.all([orders.refresh(), couriers.refresh()])
+  }
+
+  async function cancelOrder(id: string) {
+    await $fetch<{ order: Order }>(`/api/orders/${id}/cancel`, { method: 'POST' })
+    await Promise.all([orders.refresh(), couriers.refresh()])
   }
 
   async function createCourier(
@@ -59,6 +71,8 @@ export function useDispatch() {
     createCourier,
     deleteOrder,
     deleteCourier,
+    deliverOrder,
+    cancelOrder,
     refresh: async () => {
       await Promise.all([grid.refresh(), orders.refresh(), couriers.refresh()])
     },
