@@ -78,30 +78,55 @@
                   v-for="(order, i) in orderList"
                   v-show="order?.pickup"
                   :key="`pickup-${order?.id ?? i}`"
-                  class="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-default bg-success shadow-sm"
+                  class="absolute w-8 h-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-default overflow-hidden shadow-sm ring-2 ring-background"
                   :style="pointStyle(order.pickup)"
-                />
+                  title="Pickup"
+                >
+                  <NuxtImg
+                    src="/image/andrew.jpeg"
+                    alt="Order (pickup)"
+                    class="w-full h-full object-cover"
+                    width="32"
+                    height="32"
+                  />
+                </div>
                 <div
                   v-for="(order, i) in orderList"
                   v-show="order?.dropoff"
                   :key="`dropoff-${order?.id ?? i}`"
-                  class="absolute h-3 w-3 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-default bg-warning shadow-sm"
+                  class="absolute w-8 h-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-default overflow-hidden shadow-sm ring-2 ring-background"
                   :style="pointStyle(order.dropoff)"
-                />
+                  title="Dropoff"
+                >
+                  <NuxtImg
+                    src="/image/yana.jpg"
+                    alt="Dropoff"
+                    class="w-full h-full object-cover"
+                    width="32"
+                    height="32"
+                  />
+                </div>
                 <div
                   v-for="(c, i) in courierList"
                   v-show="c?.position"
                   :key="c?.id ?? `courier-${i}`"
-                  class="absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-default shadow-sm"
-                  :class="courierDotClass(c)"
+                  class="absolute w-8 h-8 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-default overflow-hidden shadow-sm ring-2 ring-background"
                   :style="pointStyle(c.position)"
-                  :title="`${c?.id ?? ''} (${c?.status ?? ''})`"
-                />
+                  :title="`Courier ${c?.id ?? ''} (${c?.status ?? ''})`"
+                >
+                  <NuxtImg
+                    :src="'/image/oleksandr.png'"
+                    alt="Courier"
+                    class="w-full h-full object-cover"
+                    width="32"
+                    height="32"
+                  />
+                </div>
               </div>
 
               <template #footer>
                 <p class="text-xs text-muted">
-                  Green = pickup · Amber = dropoff · Blue = courier
+                  Andrew = pickup · Yana = dropoff · Oleksandr = courier
                 </p>
               </template>
             </UCard>
@@ -269,7 +294,9 @@
                       {{ order?.id?.slice(-8) ?? "—" }}
                     </span>
                     <span class="shrink-0 text-xs text-muted">
-                      {{ order?.weightKg != null ? `${order.weightKg} kg` : "—" }}
+                      {{
+                        order?.weightKg != null ? `${order.weightKg} kg` : "—"
+                      }}
                     </span>
                     <UBadge
                       :color="orderStatusColor(order?.status)"
@@ -345,7 +372,10 @@
                       {{ c?.id?.slice(-8) ?? "—" }}
                     </span>
                     <span class="shrink-0 text-xs text-muted">
-                      {{ transportLabel(c?.transport) }} · {{ c?.completedOrdersToday ?? 0 }} today ({{ c?.position?.x ?? "—" }}, {{ c?.position?.y ?? "—" }})
+                      {{ transportLabel(c?.transport) }} ·
+                      {{ c?.completedOrdersToday ?? 0 }} today ({{
+                        c?.position?.x ?? "—"
+                      }}, {{ c?.position?.y ?? "—" }})
                     </span>
                     <UBadge
                       :color="courierStatusColor(c?.status)"
@@ -382,18 +412,28 @@
 </template>
 
 <script setup lang="ts">
-const dispatch = useDispatch()
-const { orders, couriers, createOrder, createCourier, deleteOrder, deleteCourier, deliverOrder, cancelOrder, clearAll } = dispatch
-const refreshData = dispatch.refresh
+const dispatch = useDispatch();
+const {
+  orders,
+  couriers,
+  createOrder,
+  createCourier,
+  deleteOrder,
+  deleteCourier,
+  deliverOrder,
+  cancelOrder,
+  clearAll,
+} = dispatch;
+const refreshData = dispatch.refresh;
 
-const refreshStatus = ref<"idle" | "pending">("idle")
-const clearStatus = ref<"idle" | "pending">("idle")
-const orderSubmitStatus = ref<"idle" | "pending">("idle")
-const courierSubmitStatus = ref<"idle" | "pending">("idle")
-const deletingOrderId = ref<string | null>(null)
-const deletingCourierId = ref<string | null>(null)
-const deliveringOrderId = ref<string | null>(null)
-const cancellingOrderId = ref<string | null>(null)
+const refreshStatus = ref<"idle" | "pending">("idle");
+const clearStatus = ref<"idle" | "pending">("idle");
+const orderSubmitStatus = ref<"idle" | "pending">("idle");
+const courierSubmitStatus = ref<"idle" | "pending">("idle");
+const deletingOrderId = ref<string | null>(null);
+const deletingCourierId = ref<string | null>(null);
+const deliveringOrderId = ref<string | null>(null);
+const cancellingOrderId = ref<string | null>(null);
 const orderError = ref("");
 const courierError = ref("");
 
@@ -418,14 +458,14 @@ const newCourier = reactive({
 });
 
 const orderList = computed(() => {
-  const data = orders.data?.value ?? []
-  return Array.isArray(data) ? data.filter(Boolean) : []
-})
+  const data = orders.data?.value ?? [];
+  return Array.isArray(data) ? data.filter(Boolean) : [];
+});
 
 const courierList = computed(() => {
-  const data = couriers.data?.value ?? []
-  return Array.isArray(data) ? data.filter(Boolean) : []
-})
+  const data = couriers.data?.value ?? [];
+  return Array.isArray(data) ? data.filter(Boolean) : [];
+});
 
 function randomInt(max: number): number {
   return Math.floor(Math.random() * (max + 1));
@@ -442,7 +482,11 @@ function randomizeOrderCoords(): void {
 function randomizeCourierCoords(): void {
   newCourier.x = randomInt(100);
   newCourier.y = randomInt(100);
-  const transports: ("walker" | "bicycle" | "car")[] = ["walker", "bicycle", "car"];
+  const transports: ("walker" | "bicycle" | "car")[] = [
+    "walker",
+    "bicycle",
+    "car",
+  ];
   newCourier.transport = transports[randomInt(2)] ?? "walker";
 }
 
@@ -452,7 +496,10 @@ function pct(n: number | undefined): string {
   return `${Math.max(0, Math.min(100, num))}%`;
 }
 
-function pointStyle(p: { x: number; y: number } | undefined): { left: string; top: string } {
+function pointStyle(p: { x: number; y: number } | undefined): {
+  left: string;
+  top: string;
+} {
   if (!p || typeof p.x !== "number" || typeof p.y !== "number") {
     return { left: "0%", top: "0%" };
   }
@@ -463,7 +510,7 @@ function pointStyle(p: { x: number; y: number } | undefined): { left: string; to
 }
 
 function courierDotClass(c: { status?: string } | undefined): string {
-  if (!c) return "bg-muted"
+  if (!c) return "bg-muted";
   switch (c.status) {
     case "idle":
       return "bg-info";
@@ -474,20 +521,27 @@ function courierDotClass(c: { status?: string } | undefined): string {
   }
 }
 
-type BadgeColor = "primary" | "secondary" | "success" | "warning" | "info" | "error" | "neutral"
+type BadgeColor =
+  | "primary"
+  | "secondary"
+  | "success"
+  | "warning"
+  | "info"
+  | "error"
+  | "neutral";
 
 function transportLabel(transport: string | undefined): string {
-  if (transport == null) return "—"
+  if (transport == null) return "—";
   const map: Record<string, string> = {
     walker: "Walker",
     bicycle: "Bicycle",
     car: "Car",
-  }
-  return map[transport] ?? transport
+  };
+  return map[transport] ?? transport;
 }
 
 function orderStatusColor(status: string | undefined): BadgeColor {
-  if (status == null) return "neutral"
+  if (status == null) return "neutral";
   const map: Record<string, BadgeColor> = {
     pending: "warning",
     queued: "neutral",
@@ -496,29 +550,29 @@ function orderStatusColor(status: string | undefined): BadgeColor {
     in_transit: "primary",
     delivered: "success",
     cancelled: "neutral",
-  }
-  return map[status] ?? "neutral"
+  };
+  return map[status] ?? "neutral";
 }
 
 function canDeliverOrder(order: { status?: string } | undefined): boolean {
-  if (!order) return false
-  return ["assigned", "picked_up", "in_transit"].includes(order.status ?? "")
+  if (!order) return false;
+  return ["assigned", "picked_up", "in_transit"].includes(order.status ?? "");
 }
 
 function canCancelOrder(order: { status?: string } | undefined): boolean {
-  if (!order) return false
-  return ["pending", "queued", "assigned"].includes(order.status ?? "")
+  if (!order) return false;
+  return ["pending", "queued", "assigned"].includes(order.status ?? "");
 }
 
 function courierStatusColor(status: string | undefined): BadgeColor {
-  if (status == null) return "neutral"
+  if (status == null) return "neutral";
   switch (status) {
     case "idle":
-      return "info"
+      return "info";
     case "busy":
-      return "primary"
+      return "primary";
     default:
-      return "neutral"
+      return "neutral";
   }
 }
 
@@ -551,7 +605,9 @@ async function submitOrder() {
       Math.max(0, Number(newOrder.weightKg) || 0),
     );
     if (res?.assignment && !res.assignment.assigned) {
-      orderError.value = res.assignment.queued ? "Queued (no free courier)" : (res.assignment.message ?? "No couriers available");
+      orderError.value = res.assignment.queued
+        ? "Queued (no free courier)"
+        : (res.assignment.message ?? "No couriers available");
     }
   } catch (e: unknown) {
     const err = e as { data?: { message?: string }; message?: string };
