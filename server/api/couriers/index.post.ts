@@ -2,6 +2,7 @@ import {
   courierStore,
   isPointInGrid,
   DEFAULT_GRID,
+  tryAssignQueuedToCourier,
   type Courier,
   type TransportType
 } from '~/lib/dispatch/index'
@@ -31,5 +32,7 @@ export default defineEventHandler(async (event) => {
     completedOrdersToday: 0
   }
   courierStore.set(courier)
-  return courier
+  // If there are queued orders this courier can carry, assign the first one
+  tryAssignQueuedToCourier(courier)
+  return courierStore.getById(courier.id) ?? courier
 })
